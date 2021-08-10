@@ -164,28 +164,26 @@ class Helper {
     private fun getDetailedList(files: List<File>): MutableList<Song> {
         val songs: MutableList<Song> = ArrayList()
         var reader: BufferedReader
-        // ID should be replaced with a hash based on title+artist
-        var id = 0
         createFolderIfDoesNotExists(getServerCoverDir())
         for (f in files) {
             var song: Song
             try {
                 reader = BufferedReader(InputStreamReader(FileInputStream(f.canonicalPath), "Cp1252"))
                 song = checkForProperties(reader)
+                if (song.title == "") {
+                    println("Ignored: Title: ${song.title} Path: ${song.path}")
+                    reader.close()
+                    continue
+                }
+                song.id = (song.artist + song.title).hashCode().toString()
                 song.path = f.canonicalPath
                 if (song.cover != null) {
                     val coverPath = f.parent + "\\" + song.cover
                     val fileContent = FileUtils.readFileToByteArray(File(coverPath))
                     val base64image = Base64.getEncoder().encodeToString(fileContent)
-                    writeToFile(getServerCoverDir() + "/$id.cover", base64image)
+                    writeToFile(getServerCoverDir() + "/${song.id}.cover", base64image)
                 }
-                if (song.title != "") {
-                    song.id = id.toString()
-                    songs.add(song)
-                    id++
-                } else {
-                    println("Ignored: Title: ${song.title} Path: ${song.path}")
-                }
+                songs.add(song)
                 reader.close()
             } catch (e: Exception) {
                 when (e) {
